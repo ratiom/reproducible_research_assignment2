@@ -1,0 +1,83 @@
+---
+title: "assi2"
+output: html_document
+---
+setwd("C:/Users/Conor/git/reproducible_research_assignment2")
+```{r}
+fileURL <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+
+download.file(fileURL, destfile = "./data/storm_data.csv.bz2")
+
+dat <- read.csv(bzfile('./data/storm_data.csv.bz2'))
+billion <- dat[dat$PROPDMGEXP == 'B',]
+```
+
+First, need to expand the numbers for economic damage. The two types of economic damage are property damage and crop damage; The modified values for these are stored in columns 'PROPDMG' and 'CROPDMG' respectively. The modifiers for each column are stored in adjacent columns labelled 'PROPDMGEXP' and 'CROPDMGEXP'. These columns contain single letter modifiers for the numbers in the 'PROPDMG' and 'CROPDMG' columns. If the single letter is 'B', or 'b', the corresponding damage number is in billons. If it is 'M' or 'm', the damage is in millions. If it is 'K' or 'k', the damage is in thousands, and if it is 'H', or 'h', the damage is in hundreds.
+To simplify the analysis of these numbers, new columns corresponding to total damage to property and crops will be added ('PROPDMGTOTAL', 'CROPDMGTOTAL') which will be filled by the values of 'PROPDMG' and 'CROPDMG' multiplied by whatever number signified by the modifier in the adjacent column.
+
+```{r}
+dat_totals <- mutate(dat, 'PROPDMGTOTAL'="", 'CROPDMGTOTAL' = "")
+```
+Loop through the rows, if the value in PROPDMGEXP is 'B', multiply PROPDMG by 1,000,000,000, and assign it to PROPDMGTOTAL
+```{r}
+for(i in 1:nrow(dat_small)){
+        if(dat_small[i,26] == 'B'|| dat_small[i,26] == 'b'){
+                dat_small[i,38] <- dat_small[1,25]*1000000000
+                }
+        else if(dat_small[i,26] == 'M'|| dat_small[i,26] == 'm'){
+                dat_small[i,38] <- dat_small[1,25]*1000000
+                }
+        else if(dat_small[i,26] == 'K'|| dat_small[i,26] == 'k'){
+                dat_small[i,38] <- dat_small[1,25]*1000
+        }
+        else if(dat_small[i,26] == 'H'|| dat_small[i,26] == 'h'){
+                dat_small[i,38] <- dat_small[1,25]*100
+        }
+        else{dat_small[i,38] <- dat_small[1,25]}
+                
+}
+```
+The loop above too slow
+Lets extract the first 1000 rows as a test set
+```{r}
+dat_small <- dat_totals[1:1000,]
+```
+Now run the function and measure the time
+```{r}
+system.time(time_test1())
+```
+The time is 0.39s, lets see if it scales, do 10000 rows
+
+```{r}
+dat_small <- dat_totals[1:10000,]
+system.time(time_test1())
+```
+SO now the time is 4.5s, which seems to imply the scaling is linear
+Lets try 30000 rows
+```{r}
+dat_small <- dat_totals[1:10000,]
+system.time(time_test1())
+```
+It is definitely not linear, which may give some problems as the number of rows approaches 1,000,000
+
+An alternative method is to extract the modified values and the modifiers as vectors, multiply them appropriately using a function and return the output vector as a new column.
+This action takes about 15 seconds for the entire vector
+
+```{r}
+LCN <- dat$PROPDMG
+LCL <- dat$PROPDMGEXP
+
+SLL <- c('B', 'b', 'M','m', 'K','k','H', 'h')
+SLN <- c(1000000000, 1000000000, 1000000, 1000000, 1000, 1000, 100, 100)
+#Anything under the hundreds isn't worth modifying
+add_new_value <- function(values, index){
+                if(LCL[index] %in% SLL){
+                        matched <- match(LCL[index], SLL)
+                        values*SLN[matched]
+                }
+                else
+                {values} 
+}        
+out <- mapply(add_new_value, LCN, seq_along(LCN))
+```
+
