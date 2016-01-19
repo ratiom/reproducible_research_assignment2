@@ -80,4 +80,19 @@ add_new_value <- function(values, index){
 }        
 out <- mapply(add_new_value, LCN, seq_along(LCN))
 ```
+Add the new vector as a column to dat
+```{r}
+dat$PROPDMGTOT <- out
+```
+
+
+Lets repeat this procedure for Crop Damage
+
+```{r}
+LCN <- dat$CROPDMG
+LCL <- dat$CROPDMGEXP
+out_crops <- mapply(add_new_value, LCN, seq_along(LCN))
+dat$CROPDMGTOT <- out_crops
+```
+
 
