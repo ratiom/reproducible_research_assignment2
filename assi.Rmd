@@ -94,5 +94,14 @@ LCL <- dat$CROPDMGEXP
 out_crops <- mapply(add_new_value, LCN, seq_along(LCN))
 dat$CROPDMGTOT <- out_crops
 ```
+QUESTION
+Across the United States, which types of events have the greatest economic consequences?
+This will involve splitting the DAT df by factor in EVTYPE and summing PROPDMGTOT and CROPDMGTOT
+```{r}
+require(stats)
+test <- with(dat, by(PROPDMGTOT, EVTYPE, sum)) # returns by object, not sure how to procees
+test2 <- sapply( split(dat, list(event=dat$EVTYPE)), FUN=sum) #doesnt work in this form
+```
+
 
 
